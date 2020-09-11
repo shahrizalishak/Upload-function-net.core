@@ -47,6 +47,7 @@ namespace eForm
     {
         public static void CreateMappings(IMapperConfigurationExpression configuration)
         {
+            configuration.CreateMap<EditTestUploadDto, TestUpload>().ReverseMap();
             configuration.CreateMap<CreateOrEditTestEntityDto, TestEntity>().ReverseMap();
             configuration.CreateMap<TestEntityDto, TestEntity>().ReverseMap();
             configuration.CreateMap<CreateOrEditFlightDto, Flight>().ReverseMap();

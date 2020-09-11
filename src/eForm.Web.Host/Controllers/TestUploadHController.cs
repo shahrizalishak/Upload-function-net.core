@@ -12,7 +12,7 @@ namespace eForm.Web.Controllers
     [AllowAnonymous]
     public class TestUploadHController : TestUploadController
     {
-        protected readonly ITestUploadManager _testUploadManager;
+        //protected readonly ITestUploadManager _testUploadManager;
         public TestUploadHController(ITestUploadManager testUploadManager) :
             base(testUploadManager)
         {
@@ -20,6 +20,9 @@ namespace eForm.Web.Controllers
 
         public async Task<ActionResult> DownloadFileH(Guid fileId, string contentType, string fileName)
         {
+            Guid idn = fileId;
+            string ct = contentType;
+            string name = fileName;
             var fileObject = await _testUploadManager.GetOrNullAsync(fileId);
             if (fileObject == null)
             {
@@ -29,7 +32,7 @@ namespace eForm.Web.Controllers
             return File(fileObject.Bytes, contentType, fileName);
         }
 
-        public async Task DeleteUploadedObject(Guid fileId)
+        public async Task DeleteFileH(Guid fileId)
         {
             await _testUploadManager.DeleteAsync(fileId).ConfigureAwait(false);
         }

@@ -12,13 +12,14 @@ using eForm.Test;
 using Abp.Auditing;
 using System;
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
 
 namespace eForm.Web.Controllers
 {
     [AbpMvcAuthorize]
     public class TestUploadController : eFormControllerBase
     {
-        private readonly ITestUploadManager _testUploadManager;
+        protected readonly ITestUploadManager _testUploadManager;
 
         public TestUploadController(ITestUploadManager testUploadManager) 
         {
@@ -26,10 +27,10 @@ namespace eForm.Web.Controllers
         }
 
 
-
-        public async Task<ActionResult> DownloadFile(Guid id, string contentType, string fileName)
+        [AllowAnonymous]
+        public async Task<ActionResult> DownloadFile(Guid fileId, string contentType, string fileName)
         {
-            var fileObject = await _testUploadManager.GetOrNullAsync(id);
+            var fileObject = await _testUploadManager.GetOrNullAsync(fileId);
             if (fileObject == null)
             {
                 return StatusCode((int)HttpStatusCode.NotFound);
@@ -38,6 +39,7 @@ namespace eForm.Web.Controllers
             return File(fileObject.Bytes, contentType, fileName);
         }
 
+        [AllowAnonymous]
         public async Task DeleteFile(Guid fileId)
         {
             await _testUploadManager.DeleteAsync(fileId).ConfigureAwait(false);

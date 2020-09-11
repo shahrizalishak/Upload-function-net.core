@@ -13,6 +13,8 @@ namespace eForm.Test.Dtos
 
         public ICollection<TestUploadDto> TestUpload { get; set; }
 
+        public IList<string> TestUploadListID { get; set; }
+
 
 
     }

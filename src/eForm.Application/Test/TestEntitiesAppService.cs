@@ -15,22 +15,29 @@ using eForm.Authorization;
 using Abp.Extensions;
 using Abp.Authorization;
 using Microsoft.EntityFrameworkCore;
+using eForm.Storage;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
+using System.Collections;
 
 namespace eForm.Test
 {
 	[AbpAuthorize(AppPermissions.Pages_TestEntities)]
     public class TestEntitiesAppService : eFormAppServiceBase, ITestEntitiesAppService
     {
-		 private readonly IRepository<TestEntity> _testEntityRepository;
+		private readonly IRepository<TestEntity> _testEntityRepository;
 		private readonly ITestEntitiesExcelExporter _testEntitiesExcelExporter;
-		 
+		private readonly ITestUploadManager _testUploadManager;
+		private readonly IRepository<TestUpload, Guid> _testUploadRepository;
 
-		  public TestEntitiesAppService(IRepository<TestEntity> testEntityRepository, 
-			  ITestEntitiesExcelExporter testEntitiesExcelExporter) 
+		public TestEntitiesAppService(IRepository<TestEntity> testEntityRepository, 
+			  ITestEntitiesExcelExporter testEntitiesExcelExporter,
+			  ITestUploadManager testUploadManager,
+			  IRepository<TestUpload, Guid> testUploadRepository) 
 		  {
 			_testEntityRepository = testEntityRepository;
 			_testEntitiesExcelExporter = testEntitiesExcelExporter;
-
+			_testUploadManager = testUploadManager;
+			_testUploadRepository = testUploadRepository;
 
 		  }
 
@@ -98,10 +105,25 @@ namespace eForm.Test
          {
             var testEntity = ObjectMapper.Map<TestEntity>(input);
 
-			
+			var TestId = await _testEntityRepository.InsertAndGetIdAsync(testEntity);
+			var ListFileID = input.TestUploadListID;
+			await UpdateFile(TestId, ListFileID);
 
-            await _testEntityRepository.InsertAsync(testEntity);
-         }
+		}
+
+		//Insert TestID into TestUpload table
+		[AbpAuthorize(AppPermissions.Pages_TestEntities_Create)]
+		protected virtual async Task UpdateFile(int testId, IList<string> listFileId)
+		{
+			var testFile = new EditTestUploadDto();
+			testFile.TestId = testId;
+
+				foreach (var att in listFileId)
+				{
+					var fileObject = await _testUploadManager.GetOrNullAsync(Guid.Parse(att));
+					ObjectMapper.Map(testFile, fileObject);
+				}	
+		}
 
 		 [AbpAuthorize(AppPermissions.Pages_TestEntities_Edit)]
 		 protected virtual async Task Update(CreateOrEditTestEntityDto input)
@@ -145,6 +167,12 @@ namespace eForm.Test
 			var id = await _testEntityRepository.InsertAndGetIdAsync(testEntity);
 
 			return id;
+		}
+
+		//Upload
+		public async Task DeleteAttachment(string input)
+		{
+			await _testUploadManager.DeleteAsync(Guid.Parse(input)).ConfigureAwait(false);
 		}
 
 	}
