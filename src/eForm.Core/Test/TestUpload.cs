@@ -10,7 +10,7 @@ using Abp.Domain.Entities.Auditing;
 namespace eForm.Test
 {
     [Table("TestUpload")]
-    public class TestUpload : FullAuditedEntity<Guid>, IMayHaveTenant
+    public class TestUpload : Entity<Guid>, IMayHaveTenant
     {
         public virtual int? TenantId { get; set; }
 

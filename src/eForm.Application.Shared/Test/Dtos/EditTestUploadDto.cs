@@ -7,6 +7,6 @@ namespace eForm.Test.Dtos
 {
     public class EditTestUploadDto : EntityDto<Guid?>
     {
-        public int TestId { get; set; }
+        public int? TestId { get; set; }
     }
 }

@@ -15,7 +15,9 @@ namespace eForm.Test
         [Required]
         public virtual byte[] Bytes { get; set; }
 
-        public virtual int? TestId { get; set; }
+        public virtual int? TestEntityId { get; set; }
+
+        public virtual TestEntity TestEntity { get; set; }
 
         public virtual string Name { get; set; }
         public virtual string ContentType { get; set; }

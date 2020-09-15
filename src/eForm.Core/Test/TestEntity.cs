@@ -17,6 +17,8 @@ namespace eForm.Test
 
         public virtual ICollection<TestUpload> TestUpload { get; set; }
 
+        public virtual ICollection<TempUpload> TempUpload { get; set; }
+
 
     }
 }

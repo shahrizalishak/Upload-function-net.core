@@ -5,7 +5,7 @@ using System.Text;
 
 namespace eForm.Test.Dtos
 {
-    public class TestUploadDto : FullAuditedEntityDto<Guid>
+    public class TempUploadDto : FullAuditedEntityDto<Guid>
     {
         public byte[] Bytes { get; set; }
 

@@ -28,16 +28,19 @@ namespace eForm.Test
 		private readonly ITestEntitiesExcelExporter _testEntitiesExcelExporter;
 		private readonly ITestUploadManager _testUploadManager;
 		private readonly IRepository<TestUpload, Guid> _testUploadRepository;
+		private readonly IRepository<TempUpload, Guid> _tempUploadRepository;
 
 		public TestEntitiesAppService(IRepository<TestEntity> testEntityRepository, 
 			  ITestEntitiesExcelExporter testEntitiesExcelExporter,
 			  ITestUploadManager testUploadManager,
-			  IRepository<TestUpload, Guid> testUploadRepository) 
+			  IRepository<TestUpload, Guid> testUploadRepository,
+			  IRepository<TempUpload, Guid> tempUploadRepository) 
 		  {
 			_testEntityRepository = testEntityRepository;
 			_testEntitiesExcelExporter = testEntitiesExcelExporter;
 			_testUploadManager = testUploadManager;
 			_testUploadRepository = testUploadRepository;
+			_tempUploadRepository = tempUploadRepository;
 
 		  }
 
@@ -71,9 +74,13 @@ namespace eForm.Test
 		 
 		 public async Task<GetTestEntityForViewDto> GetTestEntityForView(int id)
          {
-            var testEntity = await _testEntityRepository.GetAsync(id);
+            //var testEntity = await _testEntityRepository.GetAsync(id);
+			var testEntity = await _testEntityRepository.GetAll()
+			   .Include(e => e.TempUpload)
+				.Where(e => e.Id == id)
+				.FirstOrDefaultAsync();
 
-            var output = new GetTestEntityForViewDto { TestEntity = ObjectMapper.Map<TestEntityDto>(testEntity) };
+			var output = new GetTestEntityForViewDto { TestEntity = ObjectMapper.Map<TestEntityDto>(testEntity) };
 			
             return output;
          }
@@ -81,9 +88,14 @@ namespace eForm.Test
 		 [AbpAuthorize(AppPermissions.Pages_TestEntities_Edit)]
 		 public async Task<GetTestEntityForEditOutput> GetTestEntityForEdit(EntityDto input)
          {
-            var testEntity = await _testEntityRepository.FirstOrDefaultAsync(input.Id);
-           
-		    var output = new GetTestEntityForEditOutput {TestEntity = ObjectMapper.Map<CreateOrEditTestEntityDto>(testEntity)};
+			//var testEntity = await _testEntityRepository.FirstOrDefaultAsync(input.Id);
+			var testEntity = await _testEntityRepository.GetAll()
+			   .Include(e => e.TempUpload)
+				.Where(e => e.Id == input.Id)
+				.FirstOrDefaultAsync();
+
+
+			var output = new GetTestEntityForEditOutput {TestEntity = ObjectMapper.Map<CreateOrEditTestEntityDto>(testEntity)};
 			
             return output;
          }
@@ -107,35 +119,81 @@ namespace eForm.Test
 
 			var TestId = await _testEntityRepository.InsertAndGetIdAsync(testEntity);
 			var ListFileID = input.TestUploadListID;
-			await UpdateFile(TestId, ListFileID);
+			if (ListFileID != null)
+			{
+				await UpdateFile(TestId, ListFileID);
+			}
+			
 
 		}
 
 		//Insert TestID into TestUpload table
-		[AbpAuthorize(AppPermissions.Pages_TestEntities_Create)]
-		protected virtual async Task UpdateFile(int testId, IList<string> listFileId)
+		protected virtual async Task UpdateFile(int? testId, IList<String> listFileId)
 		{
-			var testFile = new EditTestUploadDto();
-			testFile.TestId = testId;
-
 				foreach (var att in listFileId)
 				{
-					var fileObject = await _testUploadManager.GetOrNullAsync(Guid.Parse(att));
-					ObjectMapper.Map(testFile, fileObject);
-				}	
+				var testFile = new EditTestUploadDto
+				{
+					Id = Guid.Parse(att),
+					TestId = testId
+				};
+				var fileObject = await _testUploadManager.GetOrNullAsync(Guid.Parse(att));
+				ObjectMapper.Map(testFile, fileObject);
+				
+				await CopyTempFile(fileObject);
+				await DeleteFile(fileObject.Id);
+			}
+
+			   
 		}
 
-		 [AbpAuthorize(AppPermissions.Pages_TestEntities_Edit)]
+
+		protected virtual async Task CopyTempFile(TestUpload listFileId)
+		{
+			var newFile = new TempUpload
+			{
+				Id = listFileId.Id,
+				Bytes = listFileId.Bytes,
+				Name = listFileId.Name,
+				ContentType = listFileId.ContentType,
+				TestEntityId = listFileId.TestId,
+				TenantId = listFileId.TenantId
+			};
+			var fileObjectne = ObjectMapper.Map<TempUpload>(newFile);
+			await _tempUploadRepository.InsertAsync(fileObjectne);
+		}
+
+
+		public async Task DeleteFile(Guid GuidFfile)
+		{
+			await _testUploadRepository.DeleteAsync(GuidFfile);
+		}
+
+		[AbpAuthorize(AppPermissions.Pages_TestEntities_Edit)]
 		 protected virtual async Task Update(CreateOrEditTestEntityDto input)
          {
-            var testEntity = await _testEntityRepository.FirstOrDefaultAsync((int)input.Id);
-             ObjectMapper.Map(input, testEntity);
-         }
+			var testEntity = await _testEntityRepository.FirstOrDefaultAsync((int)input.Id);
+			ObjectMapper.Map(input, testEntity);
+
+			var ListFileID = input.TestUploadListID;
+			if (ListFileID != null)
+			{
+				await UpdateFile(input.Id, ListFileID);
+			}
+		}
 
 		 [AbpAuthorize(AppPermissions.Pages_TestEntities_Delete)]
          public async Task Delete(EntityDto input)
          {
-            await _testEntityRepository.DeleteAsync(input.Id);
+			var testEntity = await _testEntityRepository.GetAll()
+			   .Include(e => e.TempUpload)
+				.Where(e => e.Id == input.Id)
+				.FirstOrDefaultAsync();
+			foreach (var att in testEntity.TempUpload)
+			{
+				await _testUploadManager.DeleteAsync(att.Id);
+			}
+			await _testEntityRepository.DeleteAsync(input.Id);
          } 
 
 		public async Task<FileDto> GetTestEntitiesToExcel(GetAllTestEntitiesForExcelInput input)
@@ -173,6 +231,11 @@ namespace eForm.Test
 		public async Task DeleteAttachment(string input)
 		{
 			await _testUploadManager.DeleteAsync(Guid.Parse(input)).ConfigureAwait(false);
+		}
+
+		public async Task DeleteAttachmentTemp(string input)
+		{
+			await _testUploadManager.DeleteAsyncTemp(Guid.Parse(input)).ConfigureAwait(false);
 		}
 
 	}

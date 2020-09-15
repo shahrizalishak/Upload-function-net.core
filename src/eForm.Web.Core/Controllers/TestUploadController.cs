@@ -28,7 +28,7 @@ namespace eForm.Web.Controllers
 
 
         [AllowAnonymous]
-        public async Task<ActionResult> DownloadFile(Guid fileId, string contentType, string fileName)
+        public async Task<ActionResult> DownloadFileTemp(Guid fileId, string contentType, string fileName)
         {
             var fileObject = await _testUploadManager.GetOrNullAsync(fileId);
             if (fileObject == null)
@@ -40,7 +40,20 @@ namespace eForm.Web.Controllers
         }
 
         [AllowAnonymous]
-        public async Task DeleteFile(Guid fileId)
+        public async Task<ActionResult> DownloadFile(Guid fileId, string contentType, string fileName)
+        {
+            var fileObject = await _testUploadManager.GetOrNullAsyncReal(fileId);
+            if (fileObject == null)
+            {
+                return StatusCode((int)HttpStatusCode.NotFound);
+            }
+
+            return File(fileObject.Bytes, contentType, fileName);
+        }
+
+
+        [AllowAnonymous]
+        public async Task DeleteFileTemp(Guid fileId)
         {
             await _testUploadManager.DeleteAsync(fileId).ConfigureAwait(false);
         }

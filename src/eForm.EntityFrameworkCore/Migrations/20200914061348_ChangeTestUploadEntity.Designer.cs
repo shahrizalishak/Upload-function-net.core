@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using eForm.EntityFrameworkCore;
 
 namespace eForm.Migrations
 {
     [DbContext(typeof(eFormDbContext))]
-    partial class eFormDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200914061348_ChangeTestUploadEntity")]
+    partial class ChangeTestUploadEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
